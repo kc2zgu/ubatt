@@ -18,7 +18,47 @@ void ubatt_show_on_battery(UpClient *upower)
     }
     else
     {
-        g_print("Not on battery power\n");
+        g_print("Not on battery power");
+        GPtrArray *devices = up_client_get_devices2(upower);
+        UpDevice *device = NULL;
+
+        gboolean ac_online = FALSE, usbc_online = FALSE;
+
+        for (int i=0; i<devices->len; i++)
+        {
+            UpDevice *this_dev = g_ptr_array_index(devices, i);
+            UpDeviceKind kind;
+            gboolean supply, online;
+            gchar *path;
+            g_object_get(this_dev,
+                         "power-supply", &supply,
+                         "kind", &kind,
+                         "online", &online,
+                         "native-path", &path,
+                         NULL);
+            if (supply && online)
+            {
+                if (strstr(path, "USBC") != NULL)
+                {
+                    usbc_online = TRUE;
+                }
+                else
+                {
+                    ac_online = TRUE;
+                }
+            }
+        }
+        if (usbc_online)
+        {
+            g_print(" (USB-C connected)");
+        }
+        else if (ac_online)
+        {
+            g_print(" (AC adapter connected)");
+        }
+        g_ptr_array_unref(devices);
+
+        g_print("\n");
     }
 }
 
