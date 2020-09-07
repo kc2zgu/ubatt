@@ -93,11 +93,14 @@ void ubatt_show_battery(UpDevice *battery)
     gdouble percent;
     UpDeviceState state;
     const gchar *label, *statelabel;
+    gint64 time_empty, time_full;
 
     g_object_get(battery,
                  "kind", &kind,
                  "percentage", &percent,
                  "state", &state,
+                 "time-to-empty", &time_empty,
+                 "time-to-full", &time_full,
                  NULL);
 
     switch (kind)
@@ -133,7 +136,16 @@ void ubatt_show_battery(UpDevice *battery)
         statelabel = up_device_state_to_string(state);
     }
 
-    g_print("%s: %d%%, %s\n", label, (int)percent, statelabel);
+    g_print("%s: %d%%, %s", label, (int)percent, statelabel);
+    if (state == UP_DEVICE_STATE_DISCHARGING)
+    {
+        g_print(" %ld s remaining", time_empty);
+    }
+    else if (state == UP_DEVICE_STATE_CHARGING)
+    {
+        g_print(" %ld s remaining", time_full);
+    }
+    g_print("\n");
 }
 
 int main(int argc, char **argv)
