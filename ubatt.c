@@ -82,7 +82,8 @@ UpDevice *ubatt_find_laptop_battery(UpClient *upower)
         g_free (text);
     }
 
-    g_object_ref(device);
+    if (device != NULL)
+        g_object_ref(device);
     g_ptr_array_unref(devices);
     return device;
 }
@@ -192,9 +193,12 @@ int main(int argc, char **argv)
                      NULL);
         //g_print("Found battery: %.1f%% %s\n", percent, up_device_state_to_string(state));
 
-        ubatt_show_battery(battery);
+        if (battery != NULL)
+        {
+            ubatt_show_battery(battery);
 
-        g_object_unref(battery);
+            g_object_unref(battery);
+        }
     }
     
     return 0;
