@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <glib.h>
 #include <upower.h>
+#include <math.h>
 
 static gboolean opt_ver;
 
@@ -88,6 +89,26 @@ UpDevice *ubatt_find_laptop_battery(UpClient *upower)
     return device;
 }
 
+gchar *ubatt_format_time(gint64 seconds)
+{
+    if (seconds > 1800)
+    {
+        gint hours = seconds / 3600;
+        gint minutes = (seconds - (hours*3600)) / 60;
+        minutes = round(minutes / 5.0) * 5;
+        if (minutes != 0 && hours != 0)
+            return g_strdup_printf("%dh %dm", hours, minutes);
+        else if (hours == 0)
+            return g_strdup_printf("%dm", minutes);
+        else
+            return g_strdup_printf("%dh", hours);
+    }
+    else
+    {
+        return g_strdup_printf("%ldm", seconds / 60);
+    }
+}
+
 void ubatt_show_battery(UpDevice *battery)
 {
     UpDeviceKind kind;
@@ -138,13 +159,21 @@ void ubatt_show_battery(UpDevice *battery)
     }
 
     g_print("%s: %d%%, %s", label, (int)percent, statelabel);
+    gchar *time_string = NULL;
     if (state == UP_DEVICE_STATE_DISCHARGING)
     {
-        g_print(" %ld s remaining", time_empty);
+        if (time_empty != 0)
+            time_string = ubatt_format_time(time_empty);
     }
     else if (state == UP_DEVICE_STATE_CHARGING)
     {
-        g_print(" %ld s remaining", time_full);
+        if (time_full != 0)
+            time_string = ubatt_format_time(time_full);
+    }
+    if (time_string != NULL)
+    {
+        g_print(" %s remaining", time_string);
+        g_free(time_string);
     }
     g_print("\n");
 }
