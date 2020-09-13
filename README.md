@@ -8,11 +8,11 @@ Features
 --------
 
 * Show current battery level and charging status
-* Show line power status (not implemented)
+* Show line power status
 * Show UPS battery status (not implemented)
-* Print charge level on standard output for parsing in scripts (not implemented)
-* Return charge level as exit code (not implemented)
-* Return charging status as exit code (not implemented)
+* Print charge level on standard output for parsing in scripts
+* Return charge level as exit code
+* Return charging status as exit code
 * Return line power status as exit code (not implemented)
 
 Building

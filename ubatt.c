@@ -3,11 +3,14 @@
 #include <upower.h>
 #include <math.h>
 
-static gboolean opt_ver;
+static gboolean opt_ver, opt_print, opt_ret, opt_retcharge;
 
 static GOptionEntry entries[] =
 {
-    {"version", 'V', 0, G_OPTION_ARG_NONE, &opt_ver, "Show UPower daemon version", NULL},
+    {"version",         'V', 0, G_OPTION_ARG_NONE, &opt_ver,      "Show UPower daemon version", NULL},
+    {"print-charge",    'p', 0, G_OPTION_ARG_NONE, &opt_print,    "Print charge level on stamdard output", NULL},
+    {"return-battery",  'r', 0, G_OPTION_ARG_NONE, &opt_ret,      "Return 1 if running on battery", NULL},
+    {"return-charge",   'R', 0, G_OPTION_ARG_NONE, &opt_retcharge,"Return charge level as exit status", NULL},
     NULL
 };
 
@@ -180,16 +183,19 @@ void ubatt_show_battery(UpDevice *battery)
 
 int main(int argc, char **argv)
 {
-    UpClient *upower;
+    UpClient *upower = NULL;
     GError *error = NULL;
     GOptionContext *opts;
+    int ret;
 
     opts = g_option_context_new("- show upower battery status");
     g_option_context_add_main_entries(opts, entries, NULL);
     if (!g_option_context_parse(opts, &argc, &argv, &error))
     {
         g_print("command line error: %s\n", error->message);
-        return 1;
+        ret = 1;
+
+        return ret;
     }
 
     upower = up_client_new();
@@ -197,7 +203,9 @@ int main(int argc, char **argv)
     if (upower == NULL)
     {
         g_print("Could not connect to upower");
-        return 2;
+        ret = 2;
+
+        return ret;
     }
 
     if (opt_ver)
@@ -206,29 +214,62 @@ int main(int argc, char **argv)
 
         g_print("UPower version: %s\n", up_ver);
 
-        return 0;
+        ret = 0;
     }
-
-    ubatt_show_on_battery(upower);
-
-    UpDevice *battery = ubatt_find_laptop_battery(upower);
-    if (battery)
+    else
     {
+        UpDevice *battery = ubatt_find_laptop_battery(upower);
         gdouble percent;
         UpDeviceState state;
-        g_object_get(battery,
-                     "percentage", &percent,
-                     "state", &state,
-                     NULL);
-        //g_print("Found battery: %.1f%% %s\n", percent, up_device_state_to_string(state));
+        if (battery)
+        {
+            g_object_get(battery,
+                         "percentage", &percent,
+                         "state", &state,
+                         NULL);
+        }
+        if (opt_print)
+        {
+            if (battery)
+            {
+                g_print("%.0f\n", percent);
+                ret = 0;
+            }
+            else
+            {
+                g_print("no battery\n");
+                ret = 1;
+            }
+        }
+        else if (opt_ret)
+        {
+            if (up_client_get_on_battery(upower))
+                ret = 1;
+            else
+                ret = 0;
+        }
+        else if (opt_retcharge)
+        {
+            if (battery)
+                ret = percent;
+            else
+                ret = 255;
+        }
+        else
+        {
+            ubatt_show_on_battery(upower);
 
+            if (battery != NULL)
+            {
+                ubatt_show_battery(battery);
+            }
+        }
         if (battery != NULL)
         {
-            ubatt_show_battery(battery);
-
             g_object_unref(battery);
         }
     }
-    
-    return 0;
+
+    g_object_unref(upower);
+    return ret;
 }
