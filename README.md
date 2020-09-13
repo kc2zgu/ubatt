@@ -18,7 +18,43 @@ Features
 Building
 --------
 
-ubatt uses CMake
+ubatt uses CMake:
+
+    $ cd ubatt
+    $ mkdir build
+    $ cmake ..
+    $ make
+     -- or --
+    $ cmake .. -G Ninja
+    $ ninja
+
+
+Examples
+--------
+
+Show a summary of battery information:
+
+    $ ubatt
+    On battery power
+    Battery: 46%, Discharging 3h 30m remaining
+
+Print just the battery charge level (useful for parsing in shell scripts):
+
+    $ ubatt -p
+    46
+
+Return 1 or 0 if on battery or line power:
+
+    if ! ubatt -r; then
+        echo "On battery!"
+    fi
+
+
+Return the battery charge level as exit code:
+
+    ubatt -R
+    bat=$?
+    echo "Battery is ${bat}%"
 
 License
 -------
