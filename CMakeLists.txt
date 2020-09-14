@@ -12,3 +12,5 @@ set(CMAKE_C_FLAGS "-std=gnu99 -Werror=implicit")
 
 add_executable("ubatt" "ubatt.c")
 target_link_libraries("ubatt" ${GLIB_LIBRARIES} ${UPOWER_LIBRARIES} "m")
+
+install(TARGETS "ubatt" DESTINATION "bin")
