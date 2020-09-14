@@ -3,7 +3,7 @@
 #include <upower.h>
 #include <math.h>
 
-static gboolean opt_ver, opt_print, opt_ret, opt_retcharge;
+static gboolean opt_ver, opt_print, opt_ret, opt_retcharge, opt_ups;
 
 static GOptionEntry entries[] =
 {
@@ -11,6 +11,7 @@ static GOptionEntry entries[] =
     {"print-charge",    'p', 0, G_OPTION_ARG_NONE, &opt_print,    "Print charge level on stamdard output", NULL},
     {"return-battery",  'r', 0, G_OPTION_ARG_NONE, &opt_ret,      "Return 1 if running on battery", NULL},
     {"return-charge",   'R', 0, G_OPTION_ARG_NONE, &opt_retcharge,"Return charge level as exit status", NULL},
+    {"ups",             'u', 0, G_OPTION_ARG_NONE, &opt_ups,      "Show UPS status", NULL},
     NULL
 };
 
@@ -74,7 +75,6 @@ UpDevice *ubatt_find_laptop_battery(UpClient *upower)
     for (int i=0; i<devices->len; i++)
     {
         UpDevice *this_dev = g_ptr_array_index(devices, i);
-        gchar *text = up_device_to_text (this_dev);
         gboolean power_supply;
         UpDeviceKind kind;
         g_object_get(this_dev,
@@ -83,7 +83,30 @@ UpDevice *ubatt_find_laptop_battery(UpClient *upower)
                      NULL);
         if (power_supply == TRUE && kind == UP_DEVICE_KIND_BATTERY)
             device = this_dev;
-        g_free (text);
+    }
+
+    if (device != NULL)
+        g_object_ref(device);
+    g_ptr_array_unref(devices);
+    return device;
+}
+
+UpDevice *ubatt_find_ups(UpClient *upower)
+{
+    GPtrArray *devices = up_client_get_devices2(upower);
+    UpDevice *device = NULL;
+
+    for (int i=0; i<devices->len; i++)
+    {
+        UpDevice *this_dev = g_ptr_array_index(devices, i);
+        gboolean power_supply;
+        UpDeviceKind kind;
+        g_object_get(this_dev,
+                     "power-supply", &power_supply,
+                     "kind", &kind,
+                     NULL);
+        if (power_supply == TRUE && kind == UP_DEVICE_KIND_UPS)
+            device = this_dev;
     }
 
     if (device != NULL)
@@ -218,7 +241,15 @@ int main(int argc, char **argv)
     }
     else
     {
-        UpDevice *battery = ubatt_find_laptop_battery(upower);
+        UpDevice *battery;
+        if (opt_ups)
+        {
+            battery = ubatt_find_ups(upower);
+        }
+        else
+        {
+            battery = ubatt_find_laptop_battery(upower);
+        }
         gdouble percent;
         UpDeviceState state;
         if (battery)
